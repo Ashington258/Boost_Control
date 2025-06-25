@@ -1,0 +1,4 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj" 
+TO ".\Objects\PWM20240419" 
+PRINT(".\Listings\PWM20240419.m51") RAMSIZE(256) 

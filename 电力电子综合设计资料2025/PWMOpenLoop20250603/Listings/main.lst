@@ -1,0 +1,186 @@
+C51 COMPILER V9.57.0.0   MAIN                                                              06/04/2025 23:23:54 PAGE 1   
+
+
+C51 COMPILER V9.57.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: C:\Keil5\installMDK\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\List
+                    -ings\main.lst) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          
+   2          //******************WTU SEEE wwb PWM20250603****************************//
+   3          
+   4          #include<reg52.h>
+   5          #include<intrins.h>
+   6          #define uint unsigned int
+   7          #define uchar unsigned char
+   8           
+   9          sbit PWM=P2^1;//P2.1Êä³öpwm
+  10          sbit CS=P2^3; //AD²ÉÑùÊ¹ÄÜ
+  11          sbit CLK=P2^2;//Ê±ÖÓ
+  12          sbit DIDO=P2^0;//DIDOÊä³ö
+  13          sbit PWMCON=P2^4;//Çý¶¯Ê¹ÄÜ
+  14          
+  15          uchar flag,DutyCycle;  // ¶¨ÒåÕ¼¿Õ±ÈµÄ±ä»¯
+  16          uint TH01,TL01,TH02,TL02,FrequencyKhz;
+  17          uint temp,dat2;
+  18          uint vvv,i,m;
+  19          
+  20          unsigned char code tab[] = {0xc0, 0xf9, 0xa4, 0xb0, 0x99, 0x92, 0x82, 0xf8, 0x80, 0x90};
+  21          uchar code tab1[]={0x40,0x79,0x24,0x30,0x19,0x12,0x02,0x78,0x00,0x10};
+  22            
+  23          
+  24          void PWMCal(uchar DutyCycle, uint FrequencyKhz)// 0~100%  kHz
+  25          {
+  26   1        if (DutyCycle>=100)
+  27   1           DutyCycle=100;
+  28   1        else if (DutyCycle<0)
+  29   1           DutyCycle=0;
+  30   1      
+  31   1      
+  32   1        TH01=(65536-(uint)(0.9216*DutyCycle*10)/FrequencyKhz)/256;
+  33   1        TL01=(65536-(uint)(0.9216*DutyCycle*10)/FrequencyKhz)%256;
+  34   1        TH02=(65536-(uint)(0.9216*(100-DutyCycle)*10)/FrequencyKhz)/256;
+  35   1        TL02=(65536-(uint)(0.9216*(100-DutyCycle)*10)/FrequencyKhz)%256;
+  36   1        
+  37   1      
+  38   1        TR0=1;//Æô¶¯¶¨Ê±Æ÷0 
+  39   1      }
+  40          
+  41          
+  42          void delay(int tt)//1ms
+  43              {
+  44   1          while(tt--)
+  45   1            {for(i=0;i<120;i++);}
+  46   1      }
+  47              
+  48          //**********************AD Sampling channel choice*******************************//
+  49          uchar choiceADC(uint CH)//CHÎª0Ñ¡ÔñÍ¨µÀch0£¬Îª1£¬Ñ¡Ôñch1½øÐÐAD×ª»»
+  50            {
+  51   1          uchar dat;
+  52   1          CS=1;
+  53   1          _nop_();
+  54   1          CLK=1;
+C51 COMPILER V9.57.0.0   MAIN                                                              06/04/2025 23:23:54 PAGE 2   
+
+  55   1          CS=0;      
+  56   1          DIDO = 1;CLK = 0;_nop_();CLK = 1;_nop_();  //first clk
+  57   1          DIDO = 1;CLK = 0;_nop_();CLK = 1;_nop_(); //second clk
+  58   1          DIDO = CH;CLK = 0;_nop_();CLK = 1;_nop_(); //channel
+  59   1          DIDO = 1;                       
+  60   1        for(i = 0;i < 8;i++)
+  61   1        {
+  62   2          CLK = 0;_nop_();
+  63   2          if(DIDO)dat |= 0x01;
+  64   2          CLK = 1;_nop_();
+  65   2          dat = dat <<= 1;
+  66   2        }
+  67   1         return(dat);
+  68   1         CS = 1;       
+  69   1               
+  70   1        }
+  71          
+  72            
+  73              //**********************ShuMaGuan show*******************************//
+  74          void display(uint dat1)
+  75              {
+  76   1        
+  77   1      
+  78   1          dat1=(dat1*100.0*5*11)/255.0;
+  79   1        
+  80   1          P3=0xfe;
+  81   1          P0=tab[dat1/1000];
+  82   1          delay(1);
+  83   1          P0=0xff;
+  84   1            
+  85   1          P3=0xfd;
+  86   1          P0=tab1[dat1%1000/100];
+  87   1          delay(1);
+  88   1          P0=0xff;
+  89   1            
+  90   1          P3=0xfb;
+  91   1          P0=tab[dat1%100/10];
+  92   1          delay(1);
+  93   1          P0=0xff;
+  94   1            
+  95   1          P3=0xf7;
+  96   1          P0=tab[dat1%10];
+  97   1          delay(1);
+  98   1          P0=0xff;
+  99   1            
+ 100   1          }
+ 101              
+ 102              
+ 103          void main()// (65536-X)*12/11.0592=Expected one  
+ 104          {
+ 105   1        
+ 106   1        TMOD=0x01;//¶¨Ê±Æ÷0¹¤×÷·½Ê½1
+ 107   1        EA=1;//¿ª×ÜÖÐ¶Ï
+ 108   1        ET0=1;//¿ª¶¨Ê±Æ÷0ÖÐ¶Ï
+ 109   1        //PWMCal(70,20);//µÚ1¸öÊý¾ÝÎªÕ¼¿Õ±È1-70%£¬µÚ2¸öÊý¾ÝÀíÂÛÉÏÎª¿ª¹ØÆµÂÊ20kHz£¬ Êµ¼Ê²âÊÔÊ±12.5kHz 51ÏµÁÐÓÐÎó²î
+ 110   1        PWMCal(70,40);//µÚ1¸öÊý¾ÝÎªÕ¼¿Õ±È1-70%£¬µÚ2¸öÊý¾ÝÀíÂÛÉÏÎª¿ª¹ØÆµÂÊ40kHz£¬Êµ²âÎª17.9kHz¿ª¹ØÆµÂÊ,51ÏµÁÐ¶Ô¸ßÆ
+             -µPWMÓÐÎó²î
+ 111   1        P3=0xFF;
+ 112   1        P0=0xFF;
+ 113   1        PWMCON=1;//Çý¶¯Ê¹ÄÜ
+ 114   1        
+ 115   1        while(1)
+C51 COMPILER V9.57.0.0   MAIN                                                              06/04/2025 23:23:54 PAGE 3   
+
+ 116   1        {     
+ 117   2               vvv=choiceADC(0);//Ö»×öµçÑ¹µÄ¼ì²â²¿·Ö¼ì²â¡£
+ 118   2          
+ 119   2              // dat2=(vvv*100.0*5*11)/255.0;
+ 120   2                dat2=0;//test  Õý³£½ÓÈëÊ±£¬ÐèÒªÓÃÉÏÃæÒ»Ìõ´úÂë
+ 121   2               
+ 122   2               if(dat2>=4000)//±£»¤×÷ÓÃ£¬µ±Êä³öµçÑ¹³¬¹ý40V£¬½«Õ¼¿Õ±ÈÎª0¡£
+ 123   2                 {
+ 124   3                  PWMCal(0,20);  //100%Õ¼¿Õ±È£¬20khz  
+ 125   3                 }
+ 126   2               
+ 127   2                for (m=0;m<=20;m++)//ÊýÂë¹ÜÏÔÊ¾
+ 128   2                 {
+ 129   3                   display(vvv);
+ 130   3                   delay(5); 
+ 131   3                 }
+ 132   2            }     
+ 133   1      }
+ 134           
+ 135          void tim0() interrupt 1
+ 136          {
+ 137   1        if (flag)
+ 138   1        {
+ 139   2          TH0=TH01;
+ 140   2          TL0=TL01;
+ 141   2          PWM=1;
+ 142   2          flag=0;
+ 143   2          }
+ 144   1        
+ 145   1        else
+ 146   1        {
+ 147   2          TH0=TH02;
+ 148   2          TL0=TL02;
+ 149   2          PWM=0;
+ 150   2          flag=1;
+ 151   2      
+ 152   2        }
+ 153   1      
+ 154   1      }
+ 155          
+ 156          //******************WTU SEEE  PWM202506 END****************************//
+*** WARNING C294 IN LINE 68 OF main.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    709    ----
+   CONSTANT SIZE    =     20    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     22       3
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

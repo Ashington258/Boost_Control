@@ -51,6 +51,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user sources here
     Core/Src/cl_control.c
     Core/Src/iir_lpf.c
+    Core/Src/pi_controller.c
 )
 
 # Add include paths

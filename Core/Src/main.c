@@ -58,6 +58,7 @@ float base_duty = 0.0f;
 float duty = 0.0f;
 
 PI_Controller_t voltage_pi;
+PIController v_pi;
 /* 定义滤波器句柄 */
 static IIR_LPF_HandleTypeDef lpf_vadc;
 static IIR_LPF_HandleTypeDef lpf_current;
@@ -110,12 +111,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
     v_adc = IIR_LPF_Update(&lpf_vadc, v_raw);
     current = IIR_LPF_Update(&lpf_current, i_raw);
 
-    //不滤波
-    // v_adc = v_raw;
-    // current = i_raw;
+    // 不滤波
+    //  v_adc = v_raw;
+    //  current = i_raw;
 
     // PID 控制输出
-    delta = PI_Update(&voltage_pi, vadc_target, v_adc, CONTROL_PERIOD_S);
+    // delta = PI_Update(&voltage_pi, vadc_target, v_adc, CONTROL_PERIOD_S);
+    delta = PIController_Update(&v_pi, vadc_target, v_adc);
     duty = base_duty + delta;
 
     // 限制输出占空比
@@ -165,8 +167,8 @@ int main(void)
   MX_TIM1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
-  PI_Init(&voltage_pi, 2.0f, 120.0f, 500.0f);
-
+  // PI_Init(&voltage_pi, 2.0f, 120.0f, 500.0f);
+  PIController_Init(&v_pi, 10.0f, 300.0f, 0.001f, -50.0f, 50.0f); // kp, ki, dt(1ms), min, max
   vadc_target = calculate_vadc(v_target);
   base_duty = BaseDuty_FromFit(vadc_target);
 

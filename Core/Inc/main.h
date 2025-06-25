@@ -35,6 +35,8 @@ extern "C"
 #include <stdbool.h>
 #include "cl_control.h"
 #include "iir_lpf.h"
+#include "pi_controller.h"
+
     /* USER CODE END Includes */
 
     /* Exported types ------------------------------------------------------------*/
